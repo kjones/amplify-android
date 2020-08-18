@@ -91,7 +91,7 @@ jobs:
       - run:
           name: Build the project
           command: |
-            .circleci/retry.sh 3 "./gradlew build"
+            .circleci/retry.sh 3 "./gradlew build --scan --stacktrace"
             .circleci/aggregate-test-results.sh ~/amplify-android-home
             .circleci/aggregate-build-artifacts.sh
       - store_test_results:
