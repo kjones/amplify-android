@@ -25,6 +25,8 @@ import androidx.annotation.VisibleForTesting;
 import androidx.core.util.ObjectsCompat;
 
 import com.amplifyframework.AmplifyException;
+import com.amplifyframework.api.aws.TemporalDeserializers;
+import com.amplifyframework.api.aws.TemporalSerializers;
 import com.amplifyframework.core.Action;
 import com.amplifyframework.core.Amplify;
 import com.amplifyframework.core.Consumer;
@@ -40,6 +42,7 @@ import com.amplifyframework.core.model.query.predicate.QueryField;
 import com.amplifyframework.core.model.query.predicate.QueryPredicate;
 import com.amplifyframework.core.model.query.predicate.QueryPredicateOperation;
 import com.amplifyframework.core.model.query.predicate.QueryPredicates;
+import com.amplifyframework.core.model.temporal.Temporal;
 import com.amplifyframework.datastore.DataStoreException;
 import com.amplifyframework.datastore.model.CompoundModelProvider;
 import com.amplifyframework.datastore.model.SystemModelsProviderFactory;
@@ -52,6 +55,7 @@ import com.amplifyframework.util.Immutable;
 import com.amplifyframework.util.Wrap;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -134,7 +138,16 @@ public final class SQLiteStorageAdapter implements LocalStorageAdapter {
             ModelProvider systemModelsProvider) {
         this.modelSchemaRegistry = modelSchemaRegistry;
         this.modelsProvider = CompoundModelProvider.of(systemModelsProvider, userModelsProvider);
-        this.gson = new Gson();
+        this.gson = new GsonBuilder()
+                .registerTypeAdapter(Temporal.Date.class, new TemporalDeserializers.DateDeserializer())
+                .registerTypeAdapter(Temporal.Time.class, new TemporalDeserializers.TimeDeserializer())
+                .registerTypeAdapter(Temporal.Timestamp.class, new TemporalDeserializers.TimestampDeserializer())
+                .registerTypeAdapter(Temporal.DateTime.class, new TemporalDeserializers.DateTimeDeserializer())
+                .registerTypeAdapter(Temporal.Timestamp.class, new TemporalSerializers.TemporalTimestampSerializer())
+                .registerTypeAdapter(Temporal.Date.class, new TemporalSerializers.TemporalDateSerializer())
+                .registerTypeAdapter(Temporal.DateTime.class, new TemporalSerializers.TemporalDateTimeSerializer())
+                .registerTypeAdapter(Temporal.Time.class, new TemporalSerializers.TemporalTimeSerializer())
+                .create();
         this.itemChangeSubject = PublishSubject.<StorageItemChange<? extends Model>>create().toSerialized();
         this.toBeDisposed = new CompositeDisposable();
     }
