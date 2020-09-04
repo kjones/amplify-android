@@ -62,9 +62,9 @@ final class VersionRepository {
                 try {
                     emitter.onSuccess(extractVersion(model, iterableResults));
                 } catch (DataStoreException badVersionFailure) {
-                    emitter.onError(badVersionFailure);
+                    emitter.tryOnError(badVersionFailure);
                 }
-            }, emitter::onError);
+            }, emitter::tryOnError);
         });
     }
 

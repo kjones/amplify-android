@@ -58,7 +58,7 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
  */
 final class SubscriptionProcessor {
     private static final Logger LOG = Amplify.Logging.forNamespace("amplify:aws-datastore");
-    private static final long SUBSCRIPTION_START_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
+    private static final long SUBSCRIPTION_START_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(120);
 
     private final AppSync appSync;
     private final ModelProvider modelProvider;

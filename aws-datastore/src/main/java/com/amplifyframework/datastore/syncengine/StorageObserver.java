@@ -57,7 +57,11 @@ final class StorageObserver {
     void startObservingStorageChanges(Action onStarted) {
         ongoingOperationsDisposable.add(
             Observable.<StorageItemChange<? extends Model>>create(emitter -> {
-                localStorageAdapter.observe(emitter::onNext, emitter::onError, emitter::onComplete);
+                localStorageAdapter.observe(
+                    emitter::onNext,
+                    emitter::tryOnError,
+                    emitter::onComplete
+                );
                 onStarted.call();
             })
             .subscribeOn(Schedulers.single())

@@ -45,7 +45,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
  */
 final class MutationProcessor {
     private static final Logger LOG = Amplify.Logging.forNamespace("amplify:aws-datastore");
-    private static final long ITEM_PROCESSING_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
+    private static final long ITEM_PROCESSING_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(120);
 
     private final VersionRepository versionRepository;
     private final Merger merger;
@@ -99,11 +99,17 @@ final class MutationProcessor {
             if (next == null) {
                 return Completable.complete();
             }
-            boolean itemFailedToProcess = !processOutboxItem(next)
-                .blockingAwait(ITEM_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            if (itemFailedToProcess) {
+            try {
+                boolean itemFailedToProcess = !processOutboxItem(next)
+                        .blockingAwait(ITEM_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                if (itemFailedToProcess) {
+                    return Completable.error(new DataStoreException(
+                            "Failed to process " + next, "Check your internet connection."
+                    ));
+                }
+            } catch (Exception exception) {
                 return Completable.error(new DataStoreException(
-                    "Failed to process " + next, "Check your internet connection."
+                        "Unexpected exception processing outbox item", exception, "Turn it off and back on."
                 ));
             }
         } while (true);
