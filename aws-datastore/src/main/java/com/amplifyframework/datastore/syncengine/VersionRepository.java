@@ -30,7 +30,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import io.reactivex.rxjava3.annotations.Nullable;
 import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.core.SingleEmitter;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Cancellable;
 
 /**
  * The VersionRepository provides a higher-level facade to lookup the version
@@ -57,7 +61,8 @@ final class VersionRepository {
     <T extends Model> Single<Integer> findModelVersion(T model) {
         // The ModelMetadata for the model uses the same ID as an identifier.
         final QueryPredicate hasMatchingId = QueryField.field("id").eq(model.getId());
-        return Single.create(emitter -> {
+        return Single.create(realEmitter -> {
+            SingleEmitter<Integer> emitter = disposeSafeEmitter(realEmitter);
             localStorageAdapter.query(ModelMetadata.class, Where.matches(hasMatchingId), iterableResults -> {
                 try {
                     emitter.onSuccess(extractVersion(model, iterableResults));
@@ -66,6 +71,44 @@ final class VersionRepository {
                 }
             }, emitter::onError);
         });
+    }
+
+    private <T> SingleEmitter<T> disposeSafeEmitter(SingleEmitter<T> emitter) {
+        return new SingleEmitter<T>() {
+            @Override
+            public void onSuccess(@NonNull T value) {
+                if (!emitter.isDisposed()) {
+                    emitter.onSuccess(value);
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Throwable throwable) {
+                if (!emitter.isDisposed()) {
+                    emitter.onError(throwable);
+                }
+            }
+
+            @Override
+            public void setDisposable(@Nullable Disposable disposable) {
+                emitter.setDisposable(disposable);
+            }
+
+            @Override
+            public void setCancellable(@Nullable Cancellable cancellable) {
+                emitter.setCancellable(cancellable);
+            }
+
+            @Override
+            public boolean isDisposed() {
+                return emitter.isDisposed();
+            }
+
+            @Override
+            public boolean tryOnError(@NonNull Throwable throwable) {
+                return emitter.tryOnError(throwable);
+            }
+        };
     }
 
     /**
